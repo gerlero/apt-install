@@ -1,0 +1,110 @@
+name: Install and cache APT packages
+description: Cache APT packages to speed up your workflows
+
+inputs:
+  packages:
+    description: APT packages to install
+    required: true
+  update:
+    description: Update package lists before installing
+    type: boolean
+    required: false
+    default: true
+  cache:
+    description: Cache the downloaded packages
+    type: boolean
+    required: false
+    default: true
+
+branding:
+  icon: box
+  color: orange
+
+runs:
+  using: "composite"
+  steps:
+    - name: Update package lists
+      if: inputs.update && inputs.update != 'false'
+      run: |
+        sudo() {
+          if [ $(id -u) -eq 0 ]; then
+            "$@"
+          else
+            command sudo "$@"
+          fi
+        }
+
+        export DEBIAN_FRONTEND=noninteractive
+        sudo apt-get update
+      shell: bash
+    - name: Save package list
+      if: inputs.cache && inputs.cache != 'false'
+      run: |
+        mkdir apt-install
+        apt-cache depends \
+          --recurse \
+          --no-recommends \
+          --no-suggests \
+          --no-conflicts \
+          --no-breaks \
+          --no-replaces \
+          --no-enhances \
+          ${{ inputs.packages }} \
+        | grep "^\w" \
+        | sort -u \
+        | tee "apt-install/packages.txt"
+      shell: bash
+    - name: Get OS version
+      id: os-version
+      if: inputs.cache && inputs.cache != 'false'
+      uses: sersoft-gmbh/os-version-action@v3
+    - name: Restore cache
+      if: inputs.cache && inputs.cache != 'false'
+      id: cache
+      uses: actions/cache/restore@v4
+      with:
+        path: apt-install/packages
+        key: apt-install-${{ steps.os-version.outputs.version }}-${{ hashFiles('apt-install/packages.txt') }}-${{ runner.arch }}
+    - name: Download packages
+      if: inputs.cache && inputs.cache != 'false' && steps.cache.outputs.cache-hit != 'true'
+      run: |
+        mkdir -p apt-install/packages
+        cd apt-install/packages
+        apt-get download $(cat ../packages.txt) || true
+      shell: bash
+    - name: Save cache
+      if: inputs.cache && inputs.cache != 'false' && steps.cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: apt-install/packages
+        key: apt-install-${{ steps.os-version.outputs.version }}-${{ hashFiles('apt-install/packages.txt') }}-${{ runner.arch }}
+    - name: Install cached packages and clean up
+      if: inputs.cache && inputs.cache != 'false'
+      run: |
+        sudo() {
+          if [ $(id -u) -eq 0 ]; then
+            "$@"
+          else
+            command sudo "$@"
+          fi
+        }
+
+        export DEBIAN_FRONTEND=noninteractive
+        sudo dpkg -Ri apt-install/packages || true
+        sudo apt-get -f install -y || true
+
+        rm -rf apt-install
+      shell: bash
+    - name: Install uncached packages
+      run: |
+        sudo() {
+          if [ $(id -u) -eq 0 ]; then
+            "$@"
+          else
+            command sudo "$@"
+          fi
+        }
+
+        export DEBIAN_FRONTEND=noninteractive
+        sudo apt-get install --no-install-recommends -y ${{ inputs.packages }}
+      shell: bash

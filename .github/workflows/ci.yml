@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  bare:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-24.04, ubuntu-22.04]
+        cache: [true, false]
+      fail-fast: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Prepare OpenFOAM
+        run: |
+          curl -s https://dl.openfoam.com/add-debian-repo.sh | sudo bash
+      - name: Install OpenFOAM
+        uses: ./
+        with:
+          packages: openfoam2406-default
+          update: false
+          cache: ${{ matrix.cache }}
+      - name: Run icoFoam -help
+        run: |
+          source /usr/lib/openfoam/openfoam2406/etc/bashrc || true
+          icoFoam -help
+          source $WM_DIR/scripts/AllwmakeParseArguments 
+
+  container:
+    runs-on: ubuntu-latest
+    container: ${{ matrix.container }}
+    strategy:
+      matrix:
+        container: ["ubuntu:24.04", "ubuntu:22.04", "debian:bookworm", "debian:bullseye"]
+        cache: [true, false]
+      fail-fast: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install curl
+        uses: ./
+        with:
+          packages: curl ca-certificates
+          cache: ${{ matrix.cache }}
+      - name: Prepare OpenFOAM
+        run: |
+          curl -s https://dl.openfoam.com/add-debian-repo.sh | bash
+      - name: Install OpenFOAM
+        uses: ./
+        with:
+          packages: openfoam2406-default
+          update: false
+          cache: ${{ matrix.cache }}
+      - name: Run icoFoam -help
+        run: |
+          source /usr/lib/openfoam/openfoam2406/etc/bashrc || true
+          icoFoam -help
+          source $WM_DIR/scripts/AllwmakeParseArguments 
+        shell: bash
