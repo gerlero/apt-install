@@ -49,7 +49,7 @@ jobs:
       - name: Install curl
         uses: ./
         with:
-          packages: curl ca-certificates
+          packages: curl
           cache: ${{ matrix.cache }}
       - name: Prepare OpenFOAM
         run: |

@@ -7,14 +7,16 @@ inputs:
     required: true
   update:
     description: Update package lists before installing
-    type: boolean
-    required: false
     default: true
   cache:
     description: Cache the downloaded packages
-    type: boolean
-    required: false
     default: true
+  install-recommends:
+    description: Install recommended packages
+    default: true
+  install-suggests:
+    description: Install suggested packages
+    default: false
 
 branding:
   icon: box
@@ -50,7 +52,13 @@ runs:
 
         mkdir apt-install
 
-        sudo apt-get install --dry-run --no-install-recommends -y ${{ inputs.packages }} \
+        export DEBIAN_FRONTEND=noninteractive
+        sudo apt-get install \
+          --dry-run \
+          ${{ (! inputs.install-recommends || inputs.install-recommends == 'false') && '--no-install-recommends' || '' }} \
+          ${{ inputs.install-suggests && inputs.install-suggests != 'false' && '--install-suggests' || '' }} \
+          -y \
+          ${{ inputs.packages }} \
         | grep '^Inst' \
         | awk '{print $2}' \
         | sort \
@@ -108,5 +116,9 @@ runs:
         }
 
         export DEBIAN_FRONTEND=noninteractive
-        sudo apt-get install --no-install-recommends -y ${{ inputs.packages }}
+        sudo apt-get install \
+          ${{ (! inputs.install-recommends || inputs.install-recommends == 'false') && '--no-install-recommends' || '' }} \
+          ${{ inputs.install-suggests && inputs.install-suggests != 'false' && '--install-suggests' || '' }} \
+          -y \
+          ${{ inputs.packages }}
       shell: bash
