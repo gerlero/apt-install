@@ -40,30 +40,21 @@ runs:
     - name: Save package list
       if: inputs.cache && inputs.cache != 'false'
       run: |
-        mkdir apt-install
-        apt-cache depends \
-          --recurse \
-          --no-recommends \
-          --no-suggests \
-          --no-conflicts \
-          --no-breaks \
-          --no-replaces \
-          --no-enhances \
-          ${{ inputs.packages }} \
-        | grep "^\w" \
-        | sort -u \
-        > "apt-install/depends.txt"
+        sudo() {
+          if [ $(id -u) -eq 0 ]; then
+            "$@"
+          else
+            command sudo "$@"
+          fi
+        }
 
-        apt list --installed \
-        | grep -v "Listing..." \
-        | cut -d/ -f1 \
-        | sort -u \
-        > "apt-install/installed.txt"
-        
-        comm -23 \
-          apt-install/depends.txt \
-          apt-install/installed.txt \
-        | tee "apt-install/packages.txt"
+        mkdir apt-install
+
+        sudo apt-get install --dry-run --no-install-recommends -y ${{ inputs.packages }} \
+        | grep '^Inst' \
+        | awk '{print $2}' \
+        | sort \
+        > apt-install/packages.txt
       shell: bash
     - name: Get OS version
       id: os-version
