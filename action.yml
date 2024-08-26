@@ -60,9 +60,9 @@ runs:
           -y \
           ${{ inputs.packages }} \
         | grep '^Inst' \
-        | awk '{print $2}' \
+        | sed 's/^Inst //' \
         | sort \
-        > apt-install/packages.txt
+        > apt-install/versions.txt
       shell: bash
     - name: Get OS version
       id: os-version
@@ -74,20 +74,20 @@ runs:
       uses: actions/cache/restore@v4
       with:
         path: apt-install/packages
-        key: apt-install-${{ steps.os-version.outputs.version }}-${{ hashFiles('apt-install/packages.txt') }}-${{ runner.arch }}
+        key: apt-install-${{ steps.os-version.outputs.version }}-${{ hashFiles('apt-install/versions.txt') }}-${{ runner.arch }}
     - name: Download packages
       if: inputs.cache && inputs.cache != 'false' && steps.cache.outputs.cache-hit != 'true'
       run: |
         mkdir -p apt-install/packages
         cd apt-install/packages
-        apt-get download $(cat ../packages.txt) || true
+        apt-get download $(awk '{print $1}' ../versions.txt) || true
       shell: bash
     - name: Save cache
       if: inputs.cache && inputs.cache != 'false' && steps.cache.outputs.cache-hit != 'true'
       uses: actions/cache/save@v4
       with:
         path: apt-install/packages
-        key: apt-install-${{ steps.os-version.outputs.version }}-${{ hashFiles('apt-install/packages.txt') }}-${{ runner.arch }}
+        key: apt-install-${{ steps.os-version.outputs.version }}-${{ hashFiles('apt-install/versions.txt') }}-${{ runner.arch }}
     - name: Install cached packages and clean up
       if: inputs.cache && inputs.cache != 'false'
       run: |
