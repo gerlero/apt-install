@@ -63,6 +63,8 @@ runs:
         | sed 's/^Inst //' \
         | sort \
         > apt-install/versions.txt
+
+        awk '{print $1}' apt-install/versions.txt > apt-install/packages.txt
       shell: bash
     - name: Get OS version
       id: os-version
@@ -74,20 +76,29 @@ runs:
       uses: actions/cache/restore@v4
       with:
         path: apt-install/packages
-        key: apt-install-${{ steps.os-version.outputs.version }}-${{ hashFiles('apt-install/versions.txt') }}-${{ runner.arch }}
+        key: apt-install-${{ runner.arch }}-${{ steps.os-version.outputs.version }}-${{ hashFiles('apt-install/packages.txt') }}-${{ hashFiles('apt-install/versions.txt') }}
+        restore-keys: |
+          apt-install-${{ runner.arch }}-${{ steps.os-version.outputs.version }}-${{ hashFiles('apt-install/packages.txt') }}-
     - name: Download packages
       if: inputs.cache && inputs.cache != 'false' && steps.cache.outputs.cache-hit != 'true'
       run: |
         mkdir -p apt-install/packages
         cd apt-install/packages
-        apt-get download $(awk '{print $1}' ../versions.txt) || true
+        touch versions.txt
+
+        comm -23 ../versions.txt versions.txt | awk '{print $1}' > downloads.txt
+        cat downloads.txt | xargs -I {} rm -f {}_*.deb
+        [ ! -s downloads.txt ] || apt-get download $(cat downloads.txt) || true
+
+        cp ../versions.txt versions.txt
+        rm -f downloads.txt
       shell: bash
     - name: Save cache
       if: inputs.cache && inputs.cache != 'false' && steps.cache.outputs.cache-hit != 'true'
       uses: actions/cache/save@v4
       with:
         path: apt-install/packages
-        key: apt-install-${{ steps.os-version.outputs.version }}-${{ hashFiles('apt-install/versions.txt') }}-${{ runner.arch }}
+        key: apt-install-${{ runner.arch }}-${{ steps.os-version.outputs.version }}-${{ hashFiles('apt-install/packages.txt') }}-${{ hashFiles('apt-install/versions.txt') }}
     - name: Install cached packages and clean up
       if: inputs.cache && inputs.cache != 'false'
       run: |
