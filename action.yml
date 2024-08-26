@@ -98,7 +98,7 @@ runs:
       uses: actions/cache/save@v4
       with:
         path: apt-install/packages
-        key: apt-install-${{ runner.arch }}-${{ steps.os-version.outputs.version }}-${{ hashFiles('apt-install/packages.txt') }}-${{ hashFiles('apt-install/versions.txt') }}
+        key: ${{ steps.cache.outputs.cache-primary-key }}
     - name: Install cached packages and clean up
       if: inputs.cache && inputs.cache != 'false'
       run: |
