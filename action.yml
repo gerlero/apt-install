@@ -19,7 +19,7 @@ inputs:
     default: false
 
 branding:
-  icon: box
+  icon: package
   color: orange
 
 runs:
