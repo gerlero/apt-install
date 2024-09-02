@@ -99,7 +99,7 @@ runs:
       with:
         path: .apt-install/packages
         key: ${{ steps.cache.outputs.cache-primary-key }}
-    - name: Install cached packages and clean up
+    - name: Install cached packages
       if: inputs.cache && inputs.cache != 'false'
       run: |
         sudo() {
@@ -113,8 +113,10 @@ runs:
         export DEBIAN_FRONTEND=noninteractive
         sudo dpkg -Ri .apt-install/packages || true
         sudo apt-get -f install -y || true
-
-        rm -rf .apt-install
+      shell: bash
+    - name: Clean up
+      if: always() && inputs.cache && inputs.cache != 'false'
+      run: rm -rf .apt-install
       shell: bash
     - name: Install uncached packages
       run: |
