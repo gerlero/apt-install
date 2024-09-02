@@ -50,7 +50,7 @@ runs:
           fi
         }
 
-        mkdir apt-install
+        mkdir .apt-install
 
         export DEBIAN_FRONTEND=noninteractive
         sudo apt-get install \
@@ -62,9 +62,9 @@ runs:
         | grep '^Inst' \
         | sed 's/^Inst //' \
         | sort \
-        > apt-install/versions.txt
+        > .apt-install/versions.txt
 
-        awk '{print $1}' apt-install/versions.txt > apt-install/packages.txt
+        awk '{print $1}' .apt-install/versions.txt > .apt-install/packages.txt
       shell: bash
     - name: Get OS version
       id: os-version
@@ -75,15 +75,15 @@ runs:
       id: cache
       uses: actions/cache/restore@v4
       with:
-        path: apt-install/packages
-        key: apt-install-${{ runner.arch }}-${{ steps.os-version.outputs.version }}-${{ hashFiles('apt-install/packages.txt') }}-${{ hashFiles('apt-install/versions.txt') }}
+        path: .apt-install/packages
+        key: apt-install-${{ runner.arch }}-${{ steps.os-version.outputs.version }}-${{ hashFiles('.apt-install/packages.txt') }}-${{ hashFiles('.apt-install/versions.txt') }}
         restore-keys: |
-          apt-install-${{ runner.arch }}-${{ steps.os-version.outputs.version }}-${{ hashFiles('apt-install/packages.txt') }}-
+          apt-install-${{ runner.arch }}-${{ steps.os-version.outputs.version }}-${{ hashFiles('.apt-install/packages.txt') }}-
     - name: Download packages
       if: inputs.cache && inputs.cache != 'false' && steps.cache.outputs.cache-hit != 'true'
       run: |
-        mkdir -p apt-install/packages
-        cd apt-install/packages
+        mkdir .apt-install/packages
+        cd .apt-install/packages
         touch versions.txt
 
         comm -23 ../versions.txt versions.txt | awk '{print $1}' > downloads.txt
@@ -97,7 +97,7 @@ runs:
       if: inputs.cache && inputs.cache != 'false' && steps.cache.outputs.cache-hit != 'true'
       uses: actions/cache/save@v4
       with:
-        path: apt-install/packages
+        path: .apt-install/packages
         key: ${{ steps.cache.outputs.cache-primary-key }}
     - name: Install cached packages and clean up
       if: inputs.cache && inputs.cache != 'false'
@@ -111,10 +111,10 @@ runs:
         }
 
         export DEBIAN_FRONTEND=noninteractive
-        sudo dpkg -Ri apt-install/packages || true
+        sudo dpkg -Ri .apt-install/packages || true
         sudo apt-get -f install -y || true
 
-        rm -rf apt-install
+        rm -rf .apt-install
       shell: bash
     - name: Install uncached packages
       run: |
