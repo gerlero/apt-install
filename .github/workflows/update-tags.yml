@@ -15,3 +15,4 @@ jobs:
         uses: sersoft-gmbh/running-release-tags-action@v3
         with:
           create-release: false
+          github-token: ${{ secrets.GITHUB_TOKEN }}
