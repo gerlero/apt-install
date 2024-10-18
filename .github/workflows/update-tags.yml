@@ -6,6 +6,8 @@ on:
 
 jobs:
   update-tags:
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     if: ${{ github.event.release.prerelease == false }}
     steps:
@@ -15,4 +17,3 @@ jobs:
         uses: sersoft-gmbh/running-release-tags-action@v3
         with:
           create-release: false
-          github-token: ${{ secrets.GITHUB_TOKEN }}
