@@ -39,6 +39,18 @@ runs:
         export DEBIAN_FRONTEND=noninteractive
         sudo apt-get update
       shell: bash
+    - name: Prepare apt command
+      id: apt
+      run: |
+        flags="--yes \
+          ${{ (! inputs.install-recommends || inputs.install-recommends == 'false') && '--no-install-recommends' || '' }} \
+          ${{ inputs.install-suggests && inputs.install-suggests != 'false' && '--install-suggests' || '' }}"
+        echo "flags=$flags" >> $GITHUB_OUTPUT
+
+        packages="${{ inputs.packages }}"
+        packages="${packages//$'\n'/ }"
+        echo "packages=$packages" >> $GITHUB_OUTPUT
+      shell: bash
     - name: Save package list
       if: inputs.cache && inputs.cache != 'false'
       run: |
@@ -54,11 +66,9 @@ runs:
 
         export DEBIAN_FRONTEND=noninteractive
         sudo apt-get install \
+          ${{ steps.apt.outputs.flags }} \
           --dry-run \
-          ${{ (! inputs.install-recommends || inputs.install-recommends == 'false') && '--no-install-recommends' || '' }} \
-          ${{ inputs.install-suggests && inputs.install-suggests != 'false' && '--install-suggests' || '' }} \
-          -y \
-          ${{ inputs.packages }} \
+          ${{ steps.apt.outputs.packages }} \
         | { grep '^Inst' || true; } \
         | sed 's/^Inst //' \
         | sort \
@@ -130,8 +140,6 @@ runs:
 
         export DEBIAN_FRONTEND=noninteractive
         sudo apt-get install \
-          ${{ (! inputs.install-recommends || inputs.install-recommends == 'false') && '--no-install-recommends' || '' }} \
-          ${{ inputs.install-suggests && inputs.install-suggests != 'false' && '--install-suggests' || '' }} \
-          -y \
-          ${{ inputs.packages }}
+          ${{ steps.apt.outputs.flags }} \
+          ${{ steps.apt.outputs.packages }}
       shell: bash
