@@ -59,7 +59,7 @@ runs:
           ${{ inputs.install-suggests && inputs.install-suggests != 'false' && '--install-suggests' || '' }} \
           -y \
           ${{ inputs.packages }} \
-        | grep '^Inst' \
+        | { grep '^Inst' || true; } \
         | sed 's/^Inst //' \
         | sort \
         > .apt-install/versions.txt
