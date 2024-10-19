@@ -17,6 +17,9 @@ inputs:
   install-suggests:
     description: Install suggested packages
     default: false
+  upgrade:
+    description: Upgrade packages if already installed
+    default: true
 
 branding:
   icon: package
@@ -44,7 +47,8 @@ runs:
       run: |
         flags="--yes \
           ${{ (! inputs.install-recommends || inputs.install-recommends == 'false') && '--no-install-recommends' || '' }} \
-          ${{ inputs.install-suggests && inputs.install-suggests != 'false' && '--install-suggests' || '' }}"
+          ${{ inputs.install-suggests && inputs.install-suggests != 'false' && '--install-suggests' || '' }} \
+          ${{ (! inputs.upgrade || inputs.upgrade == 'false') && '--no-upgrade' || '' }}"
         echo "flags=$flags" >> $GITHUB_OUTPUT
 
         packages="${{ inputs.packages }}"
