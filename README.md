@@ -34,3 +34,7 @@ Whether to install optional packages recommended by the packages to install. Def
 ### `install-suggests`
 
 Whether to install optional packages suggested by the packages to install. Default: `false`.
+
+### `upgrade`
+
+Whether to upgrade the listed packages if they are already installed and newer versions are available. Default: `true`.

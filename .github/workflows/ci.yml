@@ -38,6 +38,8 @@ jobs:
         uses: ./
         with:
           packages: bash
+          update: false
+          upgrade: false
           cache: ${{ matrix.cache }}
 
   container:
@@ -69,4 +71,6 @@ jobs:
         uses: ./
         with:
           packages: bash
+          update: false
+          upgrade: false
           cache: ${{ matrix.cache }}
