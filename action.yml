@@ -122,13 +122,14 @@ runs:
 
         export DEBIAN_FRONTEND=noninteractive
         sudo dpkg -Ri .apt-install/packages || true
-        sudo apt-get -f install -y || true
+        sudo apt-get install --fix-broken --yes
       shell: bash
     - name: Clean up
       if: always() && inputs.cache && inputs.cache != 'false'
       run: rm -rf .apt-install
       shell: bash
     - name: Install uncached packages
+      if: ${{ ! inputs.cache || inputs.cache == 'false' }}
       run: |
         sudo() {
           if [ $(id -u) -eq 0 ]; then
