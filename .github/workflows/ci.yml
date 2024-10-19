@@ -23,7 +23,7 @@ jobs:
       - name: Install some packages
         uses: ./
         with:
-          packages: >-
+          packages: |
             ninja-build
             clang-16
             gcc-10
@@ -54,7 +54,7 @@ jobs:
       - name: Install some packages
         uses: ./
         with:
-          packages: >-
+          packages: |
             ninja-build
             clang-16
             gcc-10

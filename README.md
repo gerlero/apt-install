@@ -17,7 +17,7 @@ GitHub Action to install and cache APT packages.
 
 ### `packages`
 
-**Required**. A package name or a space-separated list of package names to install.
+**Required**. A package name or a whitespace-separated list of package names to install.
 
 ### `update`
 
