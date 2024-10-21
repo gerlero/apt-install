@@ -45,7 +45,21 @@ runs:
       id: check-installed
       if: inputs.upgrade != 'true'
       run: |
-        if dpkg -l ${{ steps.apt.outputs.packages }}; then
+        sudo() {
+          if [ $(id -u) -eq 0 ]; then
+            "$@"
+          else
+            command sudo "$@"
+          fi
+        }
+  
+        to_install=$(sudo apt-get install \
+          ${{ steps.apt.outputs.flags }} \
+          --dry-run \
+          ${{ steps.apt.outputs.packages }} \
+        | { grep '^Inst' || true; })
+
+        if [ $? -eq 0 ] && [ -z "$to_install" ]; then
           echo "all-installed=true" >> $GITHUB_OUTPUT
         else
           echo "all-installed=false" >> $GITHUB_OUTPUT
