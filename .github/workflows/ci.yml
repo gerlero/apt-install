@@ -20,6 +20,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Install possibly existing package
+        uses: ./
+        with:
+          packages: ca-certificates
+          upgrade: false
+          cache: ${{ matrix.cache }}
       - name: Install some packages
         uses: ./
         with:
@@ -33,12 +39,6 @@ jobs:
             build-essential
             libopenmpi-dev
             openmpi-bin
-          cache: ${{ matrix.cache }}
-      - name: Install existing packages
-        uses: ./
-        with:
-          packages: bash
-          upgrade: false
           cache: ${{ matrix.cache }}
 
   container:
@@ -52,6 +52,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Install possibly existing package
+        uses: ./
+        with:
+          packages: ca-certificates
+          upgrade: false
+          cache: ${{ matrix.cache }}
       - name: Install some packages
         uses: ./
         with:
@@ -66,9 +72,4 @@ jobs:
             libopenmpi-dev
             openmpi-bin
           cache: ${{ matrix.cache }}
-      - name: Install existing packages
-        uses: ./
-        with:
-          packages: bash
-          upgrade: false
-          cache: ${{ matrix.cache }}
+
