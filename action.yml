@@ -28,8 +28,31 @@ branding:
 runs:
   using: "composite"
   steps:
+    - name: Prepare apt command
+      id: apt
+      run: |
+        flags="--yes \
+          ${{ inputs.install-recommends != 'true' && '--no-install-recommends' || '' }} \
+          ${{ inputs.install-suggests =='true' && '--install-suggests' || '' }} \
+          ${{ inputs.upgrade != 'true' && '--no-upgrade' || '' }}"
+        echo "flags=$flags" >> $GITHUB_OUTPUT
+
+        packages="${{ inputs.packages }}"
+        packages="${packages//$'\n'/ }"
+        echo "packages=$packages" >> $GITHUB_OUTPUT
+      shell: bash
+    - name: Check if packages are already installed
+      id: check-installed
+      if: inputs.upgrade != 'true'
+      run: |
+        if dpkg -l ${{ steps.apt.outputs.packages }}; then
+          echo "all-installed=true" >> $GITHUB_OUTPUT
+        else
+          echo "all-installed=false" >> $GITHUB_OUTPUT
+        fi
+      shell: bash
     - name: Update package lists
-      if: inputs.update && inputs.update != 'false'
+      if: steps.check-installed.outputs.all-installed != 'true' && inputs.update == 'true'
       run: |
         sudo() {
           if [ $(id -u) -eq 0 ]; then
@@ -42,21 +65,8 @@ runs:
         export DEBIAN_FRONTEND=noninteractive
         sudo apt-get update
       shell: bash
-    - name: Prepare apt command
-      id: apt
-      run: |
-        flags="--yes \
-          ${{ (! inputs.install-recommends || inputs.install-recommends == 'false') && '--no-install-recommends' || '' }} \
-          ${{ inputs.install-suggests && inputs.install-suggests != 'false' && '--install-suggests' || '' }} \
-          ${{ (! inputs.upgrade || inputs.upgrade == 'false') && '--no-upgrade' || '' }}"
-        echo "flags=$flags" >> $GITHUB_OUTPUT
-
-        packages="${{ inputs.packages }}"
-        packages="${packages//$'\n'/ }"
-        echo "packages=$packages" >> $GITHUB_OUTPUT
-      shell: bash
     - name: Save package list
-      if: inputs.cache && inputs.cache != 'false'
+      if: steps.check-installed.outputs.all-installed != 'true' && inputs.cache == 'true'
       run: |
         sudo() {
           if [ $(id -u) -eq 0 ]; then
@@ -82,10 +92,10 @@ runs:
       shell: bash
     - name: Get OS version
       id: os-version
-      if: inputs.cache && inputs.cache != 'false'
+      if: steps.check-installed.outputs.all-installed != 'true' && inputs.cache == 'true'
       uses: sersoft-gmbh/os-version-action@v3
     - name: Restore cache
-      if: inputs.cache && inputs.cache != 'false'
+      if: steps.check-installed.outputs.all-installed != 'true' &&  inputs.cache == 'true'
       id: cache
       uses: actions/cache/restore@v4
       with:
@@ -94,7 +104,7 @@ runs:
         restore-keys: |
           apt-install-${{ runner.arch }}-${{ steps.os-version.outputs.version }}-${{ hashFiles('.apt-install/packages.txt') }}-
     - name: Download packages
-      if: inputs.cache && inputs.cache != 'false' && steps.cache.outputs.cache-hit != 'true'
+      if: steps.check-installed.outputs.all-installed != 'true' && inputs.cache == 'true' && steps.cache.outputs.cache-hit != 'true'
       run: |
         mkdir .apt-install/packages
         cd .apt-install/packages
@@ -108,13 +118,13 @@ runs:
         rm -f downloads.txt
       shell: bash
     - name: Save cache
-      if: inputs.cache && inputs.cache != 'false' && steps.cache.outputs.cache-hit != 'true'
+      if: steps.check-installed.outputs.all-installed != 'true' && inputs.cache == 'true' && steps.cache.outputs.cache-hit != 'true'
       uses: actions/cache/save@v4
       with:
         path: .apt-install/packages
         key: ${{ steps.cache.outputs.cache-primary-key }}
     - name: Install cached packages
-      if: inputs.cache && inputs.cache != 'false'
+      if: steps.check-installed.outputs.all-installed != 'true' && inputs.cache == 'true'
       run: |
         sudo() {
           if [ $(id -u) -eq 0 ]; then
@@ -129,11 +139,11 @@ runs:
         sudo apt-get install --fix-broken --yes
       shell: bash
     - name: Clean up
-      if: always() && inputs.cache && inputs.cache != 'false'
+      if: steps.check-installed.outputs.all-installed != 'true' && inputs.cache == 'true'
       run: rm -rf .apt-install
       shell: bash
     - name: Install uncached packages
-      if: ${{ ! inputs.cache || inputs.cache == 'false' }}
+      if: steps.check-installed.outputs.all-installed != 'true' && inputs.cache != 'true'
       run: |
         sudo() {
           if [ $(id -u) -eq 0 ]; then
