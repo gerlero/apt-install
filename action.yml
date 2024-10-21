@@ -57,9 +57,10 @@ runs:
           ${{ steps.apt.outputs.flags }} \
           --dry-run \
           ${{ steps.apt.outputs.packages }} \
-        | { grep '^Inst' || true; })
+        | { grep '^Inst' || true; } \
+        || echo "Error" )
 
-        if [ $? -eq 0 ] && [ -z "$to_install" ]; then
+        if [ -z "$to_install" ]; then
           echo "all-installed=true" >> $GITHUB_OUTPUT
         else
           echo "all-installed=false" >> $GITHUB_OUTPUT
