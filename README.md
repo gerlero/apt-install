@@ -19,10 +19,6 @@ GitHub Action to install and cache APT packages.
 
 **Required**. A package name or a whitespace-separated list of package names to install.
 
-### `update`
-
-Whether to update the package list (i.e., run `apt-get update`) before attempting to install the packages. Default: `true`.
-
 ### `cache` 
 
 Whether to cache installed packages between runs. Default: `true`.
@@ -34,6 +30,10 @@ Whether to install optional packages recommended by the packages to install. Def
 ### `install-suggests`
 
 Whether to install optional packages suggested by the packages to install. Default: `false`.
+
+### `update`
+
+Whether to update the package list (i.e., run `apt-get update`) before installing the packages. Default: `true`.
 
 ### `upgrade`
 
