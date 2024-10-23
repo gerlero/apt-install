@@ -148,9 +148,7 @@ runs:
         export DEBIAN_FRONTEND=noninteractive
 
         echo ::group::Install cached packages
-        while ! sudo dpkg --install -R .apt-install/packages; do
-          :
-        done
+        sudo apt-get install ./.apt-install/packages/*.deb
         echo ::endgroup::
       shell: bash
     - name: Clean up
