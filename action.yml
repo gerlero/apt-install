@@ -57,7 +57,7 @@ runs:
             $flags \
             --dry-run \
             $packages \
-          | { grep '^Inst' || true; } \
+          | sed -n 's/^Inst //p' \
           || echo "error" )
           echo ::endgroup::
           if [ -z "$to_install" ]; then
@@ -80,8 +80,7 @@ runs:
             $flags \
             --dry-run \
             $packages \
-          | { grep '^Inst' || true; } \
-          | sed 's/^Inst //' \
+          | sed -n 's/^Inst //p' \
           | sort \
           > .apt-install/versions.txt
 
