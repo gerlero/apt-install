@@ -91,7 +91,11 @@ runs:
           
           cat .apt-install/versions.txt
           echo ::endgroup::
-          echo "done=false" >> $GITHUB_OUTPUT
+          if [ -s .apt-install/versions.txt ]; then
+            echo "done=false" >> $GITHUB_OUTPUT
+          else
+            echo "done=true" >> $GITHUB_OUTPUT
+          fi
         else
           echo ::group::Install packages without caching
           sudo apt-get install \

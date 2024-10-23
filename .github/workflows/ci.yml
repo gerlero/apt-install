@@ -40,6 +40,12 @@ jobs:
             libopenmpi-dev
             openmpi-bin
           cache: ${{ matrix.cache }}
+      - name: Install already installed package
+        uses: ./
+        with:
+          packages: bash
+          update: false
+          cache: ${{ matrix.cache }}
 
   container:
     runs-on: ubuntu-latest
@@ -72,4 +78,9 @@ jobs:
             libopenmpi-dev
             openmpi-bin
           cache: ${{ matrix.cache }}
-
+      - name: Install already installed package
+        uses: ./
+        with:
+          packages: bash
+          update: false
+          cache: ${{ matrix.cache }}
