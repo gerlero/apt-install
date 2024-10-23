@@ -41,7 +41,6 @@ runs:
 
         export DEBIAN_FRONTEND=noninteractive
 
-        echo ::group::Prepare action
         flags="--yes \
           ${{ inputs.install-recommends != 'true' && '--no-install-recommends' || '' }} \
           ${{ inputs.install-suggests =='true' && '--install-suggests' || '' }} \
@@ -51,7 +50,6 @@ runs:
         packages="${packages//$'\n'/ }"
 
         echo "os-version=$(sed -ne 's/^VERSION_CODENAME=//p' /etc/os-release)" >> $GITHUB_OUTPUT
-        echo ::endgroup::
 
         if [ ${{ inputs.upgrade }} != 'true' ]; then
           echo ::group::Check if packages are already installed
@@ -156,8 +154,5 @@ runs:
       shell: bash
     - name: Clean up
       if: steps.pre.outputs.done != 'true' && always()
-      run: |
-        echo ::group::Clean up
-        rm -rf .apt-install
-        echo ::endgroup::
+      run: rm -rf .apt-install
       shell: bash
