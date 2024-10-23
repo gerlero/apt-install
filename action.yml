@@ -82,11 +82,12 @@ runs:
             $packages \
           | { grep '^Inst' || true; } \
           | sed 's/^Inst //' \
-          | sort \
           > .apt-install/versions.txt
 
           awk '{print $1}' .apt-install/versions.txt > .apt-install/packages.txt
-          
+          sort .apt-install/versions.txt -o .apt-install/sorted_versions.txt
+          awk '{print $1}' .apt-install/sorted_versions.txt > .apt-install/sorted_packages.txt
+
           cat .apt-install/versions.txt
           echo ::endgroup::
           if [ -s .apt-install/versions.txt ]; then
@@ -109,22 +110,22 @@ runs:
       uses: actions/cache/restore@v4
       with:
         path: .apt-install/packages
-        key: apt-install-${{ runner.arch }}-${{ steps.pre.outputs.os-version }}-${{ hashFiles('.apt-install/packages.txt') }}-${{ hashFiles('.apt-install/versions.txt') }}
+        key: apt-install-${{ runner.arch }}-${{ steps.pre.outputs.os-version }}-${{ hashFiles('.apt-install/sorted_packages.txt') }}-${{ hashFiles('.apt-install/sorted_versions.txt') }}
         restore-keys: |
-          apt-install-${{ runner.arch }}-${{ steps.pre.outputs.os-version }}-${{ hashFiles('.apt-install/packages.txt') }}-
+          apt-install-${{ runner.arch }}-${{ steps.pre.outputs.os-version }}-${{ hashFiles('.apt-install/sorted_packages.txt') }}-
     - name: Download packages
       if: steps.pre.outputs.done != 'true' && steps.cache.outputs.cache-hit != 'true'
       run: |
         echo ::group::Download packages to cache
         mkdir .apt-install/packages
         cd .apt-install/packages
-        touch versions.txt
+        touch sorted_versions.txt
 
-        comm -23 ../versions.txt versions.txt | awk '{print $1}' > downloads.txt
-        cat downloads.txt | xargs -I {} rm -f {}_*.deb
+        comm -23 ../sorted_versions.txt sorted_versions.txt | awk '{print $1}' > downloads.txt
+        xargs -I {} rm -f {}_*.deb < downloads.txt 
         [ ! -s downloads.txt ] || apt-get download $(cat downloads.txt)
 
-        cp ../versions.txt versions.txt
+        cp ../sorted_versions.txt sorted_versions.txt
         rm -f downloads.txt
         echo ::endgroup::
       shell: bash
@@ -148,9 +149,9 @@ runs:
         export DEBIAN_FRONTEND=noninteractive
 
         echo ::group::Install cached packages
-        while ! sudo dpkg --install -R .apt-install/packages; do
-          :
-        done
+        while read -r package; do
+          sudo dpkg --install .apt-install/packages/$package_*.deb
+        done < .apt-install/packages.txt
         echo ::endgroup::
       shell: bash
     - name: Clean up
