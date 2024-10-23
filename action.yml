@@ -148,7 +148,7 @@ runs:
         export DEBIAN_FRONTEND=noninteractive
 
         echo ::group::Install cached packages
-        while ! sudo dpkg --install -R .apt-install/packages; do
+        while ! sudo dpkg --install --recursive --skip-same-version .apt-install/packages; do
           :
         done
         echo ::endgroup::
