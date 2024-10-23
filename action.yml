@@ -49,7 +49,7 @@ runs:
         packages="${{ inputs.packages }}"
         packages="${packages//$'\n'/ }"
 
-        echo "os-version=$(sed -ne 's/^VERSION_CODENAME=//p' /etc/os-release)" >> $GITHUB_OUTPUT
+        echo "os-codename=$(sed -ne 's/^VERSION_CODENAME=//p' /etc/os-release)" >> $GITHUB_OUTPUT
 
         if [ ${{ inputs.upgrade }} != 'true' ]; then
           echo ::group::Check if packages are already installed
@@ -109,9 +109,9 @@ runs:
       uses: actions/cache/restore@v4
       with:
         path: .apt-install/packages
-        key: apt-install-${{ runner.arch }}-${{ steps.pre.outputs.os-version }}-${{ hashFiles('.apt-install/packages.txt') }}-${{ hashFiles('.apt-install/versions.txt') }}
+        key: apt-install-${{ runner.arch }}-${{ steps.pre.outputs.os-codename }}-${{ hashFiles('.apt-install/packages.txt') }}-${{ hashFiles('.apt-install/versions.txt') }}
         restore-keys: |
-          apt-install-${{ runner.arch }}-${{ steps.pre.outputs.os-version }}-${{ hashFiles('.apt-install/packages.txt') }}-
+          apt-install-${{ runner.arch }}-${{ steps.pre.outputs.os-codename }}-${{ hashFiles('.apt-install/packages.txt') }}-
     - name: Download packages
       if: steps.pre.outputs.done != 'true' && steps.cache.outputs.cache-hit != 'true'
       run: |
