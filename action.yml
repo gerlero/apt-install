@@ -121,7 +121,7 @@ runs:
         touch versions.txt
 
         comm -23 ../versions.txt versions.txt | awk '{print $1}' > downloads.txt
-        cat downloads.txt | xargs -I {} rm -f {}_*.deb
+        xargs -I {} rm -f {}_*.deb < downloads.txt
         [ ! -s downloads.txt ] || apt-get download $(cat downloads.txt)
 
         cp ../versions.txt versions.txt
