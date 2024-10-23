@@ -122,7 +122,7 @@ runs:
 
         comm -23 ../versions.txt versions.txt | awk '{print $1}' > downloads.txt
         cat downloads.txt | xargs -I {} rm -f {}_*.deb
-        [ ! -s downloads.txt ] || apt-get download $(cat downloads.txt) || true
+        [ ! -s downloads.txt ] || apt-get download $(cat downloads.txt)
 
         cp ../versions.txt versions.txt
         rm -f downloads.txt
@@ -148,8 +148,9 @@ runs:
         export DEBIAN_FRONTEND=noninteractive
 
         echo ::group::Install cached packages
-        sudo dpkg -Ri .apt-install/packages || true
-        sudo apt-get install --fix-broken --yes
+        while ! sudo dpkg --install -R .apt-install/packages; do
+          :
+        done
         echo ::endgroup::
       shell: bash
     - name: Clean up
