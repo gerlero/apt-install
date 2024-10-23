@@ -28,99 +28,92 @@ branding:
 runs:
   using: "composite"
   steps:
-    - name: Prepare apt command
-      id: apt
+    - name: Begin
+      id: pre
       run: |
+        sudo() {
+          if [ $(id -u) -eq 0 ]; then
+            "$@"
+          else
+            command sudo "$@"
+          fi
+        }
+
+        export DEBIAN_FRONTEND=noninteractive
+
+        echo ::group::Prepare action
         flags="--yes \
           ${{ inputs.install-recommends != 'true' && '--no-install-recommends' || '' }} \
           ${{ inputs.install-suggests =='true' && '--install-suggests' || '' }} \
           ${{ inputs.upgrade != 'true' && '--no-upgrade' || '' }}"
-        echo "flags=$flags" >> $GITHUB_OUTPUT
 
         packages="${{ inputs.packages }}"
         packages="${packages//$'\n'/ }"
-        echo "packages=$packages" >> $GITHUB_OUTPUT
-      shell: bash
-    - name: Check if packages are already installed
-      id: check-installed
-      if: inputs.upgrade != 'true'
-      run: |
-        sudo() {
-          if [ $(id -u) -eq 0 ]; then
-            "$@"
-          else
-            command sudo "$@"
-          fi
-        }
-  
-        to_install=$(sudo apt-get install \
-          ${{ steps.apt.outputs.flags }} \
-          --dry-run \
-          ${{ steps.apt.outputs.packages }} \
-        | { grep '^Inst' || true; } \
-        || echo "Error" )
 
-        if [ -z "$to_install" ]; then
-          echo "all-installed=true" >> $GITHUB_OUTPUT
+        echo "os-version=$(sed -ne 's/^VERSION_CODENAME=//p' /etc/os-release)" >> $GITHUB_OUTPUT
+        echo ::endgroup::
+
+        if [ ${{ inputs.upgrade }} != 'true' ]; then
+          echo ::group::Check if packages are already installed
+          to_install=$(sudo apt-get install \
+            $flags \
+            --dry-run \
+            $packages \
+          | { grep '^Inst' || true; } \
+          || echo "error" )
+          echo ::endgroup::
+          if [ -z "$to_install" ]; then
+            echo "done=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+        fi
+
+        if [ ${{ inputs.update }} == 'true' ]; then
+          echo ::group::Update package lists
+          sudo apt-get update
+          echo ::endgroup::
+        fi
+
+        if [ ${{ inputs.cache }} == 'true' ]; then
+          echo ::group::Get list of packages to install
+          mkdir .apt-install
+
+          sudo apt-get install \
+            $flags \
+            --dry-run \
+            $packages \
+          | { grep '^Inst' || true; } \
+          | sed 's/^Inst //' \
+          | sort \
+          > .apt-install/versions.txt
+
+          awk '{print $1}' .apt-install/versions.txt > .apt-install/packages.txt
+          
+          cat .apt-install/versions.txt
+          echo ::endgroup::
+          echo "done=false" >> $GITHUB_OUTPUT
         else
-          echo "all-installed=false" >> $GITHUB_OUTPUT
+          echo ::group::Install packages without caching
+          sudo apt-get install \
+            $flags \
+            $packages
+          echo ::endgroup::
+          echo "done=true" >> $GITHUB_OUTPUT
         fi
       shell: bash
-    - name: Update package lists
-      if: steps.check-installed.outputs.all-installed != 'true' && inputs.update == 'true'
-      run: |
-        sudo() {
-          if [ $(id -u) -eq 0 ]; then
-            "$@"
-          else
-            command sudo "$@"
-          fi
-        }
-
-        export DEBIAN_FRONTEND=noninteractive
-        sudo apt-get update
-      shell: bash
-    - name: Save package list
-      if: steps.check-installed.outputs.all-installed != 'true' && inputs.cache == 'true'
-      run: |
-        sudo() {
-          if [ $(id -u) -eq 0 ]; then
-            "$@"
-          else
-            command sudo "$@"
-          fi
-        }
-
-        mkdir .apt-install
-
-        export DEBIAN_FRONTEND=noninteractive
-        sudo apt-get install \
-          ${{ steps.apt.outputs.flags }} \
-          --dry-run \
-          ${{ steps.apt.outputs.packages }} \
-        | { grep '^Inst' || true; } \
-        | sed 's/^Inst //' \
-        | sort \
-        > .apt-install/versions.txt
-
-        awk '{print $1}' .apt-install/versions.txt > .apt-install/packages.txt
-      shell: bash
-    - name: Get OS version
-      id: os-version
-      if: steps.check-installed.outputs.all-installed != 'true' && inputs.cache == 'true'
-      uses: sersoft-gmbh/os-version-action@v3
     - name: Restore cache
-      if: steps.check-installed.outputs.all-installed != 'true' &&  inputs.cache == 'true'
+      if: steps.pre.outputs.done != 'true'
       id: cache
       uses: actions/cache/restore@v4
       with:
         path: .apt-install/packages
-        key: apt-install-${{ runner.arch }}-${{ steps.os-version.outputs.version }}-${{ hashFiles('.apt-install/packages.txt') }}-${{ hashFiles('.apt-install/versions.txt') }}
+        key: apt-install-${{ runner.arch }}-${{ steps.pre.outputs.os-version }}-${{ hashFiles('.apt-install/packages.txt') }}-${{ hashFiles('.apt-install/versions.txt') }}
         restore-keys: |
-          apt-install-${{ runner.arch }}-${{ steps.os-version.outputs.version }}-${{ hashFiles('.apt-install/packages.txt') }}-
+          apt-install-${{ runner.arch }}-${{ steps.pre.outputs.os-version }}-${{ hashFiles('.apt-install/packages.txt') }}-
     - name: Download packages
-      if: steps.check-installed.outputs.all-installed != 'true' && inputs.cache == 'true' && steps.cache.outputs.cache-hit != 'true'
+      if: steps.pre.outputs.done != 'true' && steps.cache.outputs.cache-hit != 'true'
       run: |
+        echo ::group::Download packages to cache
         mkdir .apt-install/packages
         cd .apt-install/packages
         touch versions.txt
@@ -131,15 +124,16 @@ runs:
 
         cp ../versions.txt versions.txt
         rm -f downloads.txt
+        echo ::endgroup::
       shell: bash
     - name: Save cache
-      if: steps.check-installed.outputs.all-installed != 'true' && inputs.cache == 'true' && steps.cache.outputs.cache-hit != 'true'
+      if: steps.pre.outputs.done != 'true' && steps.cache.outputs.cache-hit != 'true'
       uses: actions/cache/save@v4
       with:
         path: .apt-install/packages
         key: ${{ steps.cache.outputs.cache-primary-key }}
     - name: Install cached packages
-      if: steps.check-installed.outputs.all-installed != 'true' && inputs.cache == 'true'
+      if: steps.pre.outputs.done != 'true'
       run: |
         sudo() {
           if [ $(id -u) -eq 0 ]; then
@@ -150,26 +144,16 @@ runs:
         }
 
         export DEBIAN_FRONTEND=noninteractive
+
+        echo ::group::Install cached packages
         sudo dpkg -Ri .apt-install/packages || true
         sudo apt-get install --fix-broken --yes
+        echo ::endgroup::
       shell: bash
     - name: Clean up
-      if: steps.check-installed.outputs.all-installed != 'true' && inputs.cache == 'true'
-      run: rm -rf .apt-install
-      shell: bash
-    - name: Install uncached packages
-      if: steps.check-installed.outputs.all-installed != 'true' && inputs.cache != 'true'
+      if: steps.pre.outputs.done != 'true' && always()
       run: |
-        sudo() {
-          if [ $(id -u) -eq 0 ]; then
-            "$@"
-          else
-            command sudo "$@"
-          fi
-        }
-
-        export DEBIAN_FRONTEND=noninteractive
-        sudo apt-get install \
-          ${{ steps.apt.outputs.flags }} \
-          ${{ steps.apt.outputs.packages }}
+        echo ::group::Clean up
+        rm -rf .apt-install
+        echo ::endgroup::
       shell: bash
