@@ -49,7 +49,7 @@ runs:
         packages="${{ inputs.packages }}"
         packages="${packages//$'\n'/ }"
 
-        echo "os-codename=$(sed -ne 's/^VERSION_CODENAME=//p' /etc/os-release)" >> $GITHUB_OUTPUT
+        echo "os-codename=$(sed -ne 's/^VERSION_CODENAME=//p' /etc/os-release)" >> "$GITHUB_OUTPUT"
 
         if [ ${{ inputs.upgrade }} != 'true' ]; then
           echo ::group::Check if packages are already installed
@@ -61,7 +61,7 @@ runs:
           || echo "error" )
           echo ::endgroup::
           if [ -z "$to_install" ]; then
-            echo "done=true" >> $GITHUB_OUTPUT
+            echo "done=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
         fi
@@ -90,9 +90,9 @@ runs:
           cat .apt-install/versions.txt
           echo ::endgroup::
           if [ -s .apt-install/versions.txt ]; then
-            echo "done=false" >> $GITHUB_OUTPUT
+            echo "done=false" >> "$GITHUB_OUTPUT"
           else
-            echo "done=true" >> $GITHUB_OUTPUT
+            echo "done=true" >> "$GITHUB_OUTPUT"
           fi
         else
           echo ::group::Install packages without caching
@@ -100,7 +100,7 @@ runs:
             $flags \
             $packages
           echo ::endgroup::
-          echo "done=true" >> $GITHUB_OUTPUT
+          echo "done=true" >> "$GITHUB_OUTPUT"
         fi
       shell: bash
     - name: Restore cache
