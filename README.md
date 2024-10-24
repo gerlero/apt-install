@@ -38,3 +38,7 @@ Whether to update the package list (i.e., run `apt-get update`) before installin
 ### `upgrade`
 
 Whether to upgrade the listed packages if they are already installed and newer versions are available. Default: `true`.
+
+## Related actions
+
+- [`gerlero/add-apt-repository`](https://github.com/gerlero/add-apt-repository): GitHub Action to add a new APT repository for installing packages.
