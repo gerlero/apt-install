@@ -42,4 +42,4 @@ Whether to upgrade the listed packages if they are already installed and newer v
 ## Related actions
 
 - [`gerlero/add-apt-repository`](https://github.com/gerlero/add-apt-repository): GitHub Action to add a new APT repository for installing packages.
-- [`gerlero/brew-install`](github.com/gerlero/brew-install): GitHub Action to install and cache Homebrew packages.
+- [`gerlero/brew-install`](https://github.com/gerlero/brew-install): GitHub Action to install and cache Homebrew packages.
