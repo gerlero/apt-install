@@ -115,7 +115,7 @@ runs:
       if: steps.pre.outputs.done != 'true' && steps.cache.outputs.cache-hit != 'true'
       run: |
         echo ::group::Download packages to cache
-        mkdir .apt-install/packages
+        mkdir -p .apt-install/packages
         cd .apt-install/packages
         touch versions.txt
 
