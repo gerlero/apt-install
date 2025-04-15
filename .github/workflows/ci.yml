@@ -15,7 +15,7 @@ jobs:
     container: ${{ matrix.container }}
     strategy:
       matrix:
-        os: [ubuntu-24.04]
+        os: [ubuntu-24.04, ubuntu-22.04]
         cache: [true, false]
         include:
           - os: ubuntu-latest
@@ -25,10 +25,28 @@ jobs:
             container: ubuntu:24.04
             cache: false
           - os: ubuntu-latest
+            container: ubuntu:22.04
+            cache: true
+          - os: ubuntu-latest
+            container: ubuntu:22.04
+            cache: false
+          - os: ubuntu-latest
+            container: ubuntu:20.04
+            cache: true
+          - os: ubuntu-latest
+            container: ubuntu:20.04
+            cache: false
+          - os: ubuntu-latest
             container: debian:bullseye
             cache: true
           - os: ubuntu-latest
             container: debian:bullseye
+            cache: false
+          - os: ubuntu-latest
+            container: debian:bookworm
+            cache: true
+          - os: ubuntu-latest
+            container: debian:bookworm
             cache: false
       fail-fast: false
     steps:
@@ -45,9 +63,6 @@ jobs:
         with:
           packages: |
             ninja-build
-            clang-16
-            gcc-10
-            libomp-16-dev
             python3
             python3-dev
             build-essential
