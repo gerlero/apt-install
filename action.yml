@@ -105,7 +105,7 @@ runs:
     - name: Restore cache
       if: steps.pre.outputs.done != 'true'
       id: cache
-      uses: actions/cache/restore@v4
+      uses: actions/cache/restore@v5
       with:
         path: .apt-install/packages
         key: apt-install-${{ runner.arch }}-${{ steps.pre.outputs.os-codename }}-${{ hashFiles('.apt-install/packages.txt') }}-${{ hashFiles('.apt-install/versions.txt') }}
@@ -129,7 +129,7 @@ runs:
       shell: bash
     - name: Save cache
       if: steps.pre.outputs.done != 'true' && steps.cache.outputs.cache-hit != 'true'
-      uses: actions/cache/save@v4
+      uses: actions/cache/save@v5
       with:
         path: .apt-install/packages
         key: ${{ steps.cache.outputs.cache-primary-key }}
