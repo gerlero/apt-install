@@ -21,6 +21,12 @@ jobs:
         cache: [true, false]
         include:
           - os: ubuntu-latest
+            container: ubuntu:26.04
+            cache: true
+          - os: ubuntu-latest
+            container: ubuntu:26.04
+            cache: false
+          - os: ubuntu-latest
             container: ubuntu:24.04
             cache: true
           - os: ubuntu-latest
