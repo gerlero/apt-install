@@ -51,12 +51,6 @@ jobs:
             container: debian:trixie
             cache: false
           - os: ubuntu-latest
-            container: debian:bullseye
-            cache: true
-          - os: ubuntu-latest
-            container: debian:bullseye
-            cache: false
-          - os: ubuntu-latest
             container: debian:bookworm
             cache: true
           - os: ubuntu-latest
